@@ -321,23 +321,23 @@ $tableRows = if ($results.Count -gt 0) {
     ($results | ForEach-Object {
 
         $enabledBadge = if ($_.Enabled) {
-            '<span class="badge badge-enabled">Enabled</span>'
+            '<span class="badge b-enabled"><span class="badge-dot"></span>Enabled</span>'
         } else {
-            '<span class="badge badge-disabled">Disabled</span>'
+            '<span class="badge b-disabled"><span class="badge-dot"></span>Disabled</span>'
         }
 
         $categoryBadge = switch ($_.Category) {
-            "ORPHAN" { '<span class="badge badge-orphan">ORPHAN</span>' }
-            "REVIEW" { '<span class="badge badge-review">REVIEW</span>' }
-            default  { '<span class="badge badge-muted">UNKNOWN</span>' }
+            "ORPHAN" { '<span class="badge b-orphan"><span class="badge-dot"></span>ORPHAN</span>' }
+            "REVIEW" { '<span class="badge b-review"><span class="badge-dot"></span>REVIEW</span>' }
+            default  { '<span class="badge b-skip"><span class="badge-dot"></span>UNKNOWN</span>' }
         }
 
         $fixBadge = switch ($_.FixStatus) {
-            "Fixed"                  { '<span class="badge badge-fixed">Fixed</span>' }
-            "Not fixed"              { '<span class="badge badge-notfixed">Not fixed</span>' }
-            "Skipped (WhatIf)"       { '<span class="badge badge-whatif">WhatIf</span>' }
-            "Manual review required" { '<span class="badge badge-review">Manual review</span>' }
-            default                  { '<span class="badge badge-error">Error</span>' }
+            "Fixed"                  { '<span class="badge b-fixed"><span class="badge-dot"></span>Fixed</span>' }
+            "Not fixed"              { '<span class="badge b-notfixed"><span class="badge-dot"></span>Not fixed</span>' }
+            "Skipped (WhatIf)"       { '<span class="badge b-whatif"><span class="badge-dot"></span>WhatIf</span>' }
+            "Manual review required" { '<span class="badge b-manual"><span class="badge-dot"></span>Manual review</span>' }
+            default                  { '<span class="badge b-err"><span class="badge-dot"></span>Error</span>' }
         }
 
         $adminVal = if ($_.adminCount -eq "null" -or $_.adminCount -eq '' -or $null -eq $_.adminCount) {
@@ -347,18 +347,18 @@ $tableRows = if ($results.Count -gt 0) {
         }
 
         "<tr>
-            <td><code>$($_.SamAccountName)</code></td>
+            <td class='mono'>$($_.SamAccountName)</td>
             <td>$($_.DisplayName)</td>
             <td>$enabledBadge</td>
             <td>$categoryBadge</td>
-            <td>$adminVal</td>
-            <td>$($_.Department)</td>
-            <td class='dn' title='$($_.DistinguishedName)'>$($_.OU)</td>
+            <td class='mono'>$adminVal</td>
+            <td class='dim'>$($_.Department)</td>
+            <td class='path' title='$($_.DistinguishedName)'>$($_.OU)</td>
             <td>$fixBadge</td>
         </tr>"
     }) -join "`n"
 } else {
-    '<tr><td colspan="8" class="no-results">No accounts with disabled ACL inheritance detected.</td></tr>'
+    '<tr><td colspan="8" class="no-data"><div class="icon">&#10003;</div><p>No accounts with disabled inheritance found</p><small>All user accounts have ACL inheritance enabled</small></td></tr>'
 }
 
 $genDate   = $startTime.ToString("yyyy-MM-dd HH:mm:ss")
@@ -370,125 +370,334 @@ $html = @"
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ACL Inheritance Audit v$scriptVersion</title>
+<title>ACL Inheritance Audit</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; padding: 40px 32px; }
-  header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid #1e2535; }
-  .header-left h1 { font-size: 22px; font-weight: 600; color: #f8fafc; letter-spacing: -0.3px; }
-  .header-left p  { font-size: 13px; color: #64748b; margin-top: 4px; }
-  .header-meta { text-align: right; font-size: 12px; color: #475569; line-height: 1.8; }
-  .header-meta strong { color: #94a3b8; }
-  .legend { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; padding: 16px 20px; background: #161b27; border: 1px solid #1e2535; border-radius: 10px; font-size: 12px; }
-  .legend-item { display: flex; align-items: center; gap: 8px; }
-  .legend-item .desc { color: #64748b; }
-  .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 32px; }
-  .stat-card { background: #161b27; border: 1px solid #1e2535; border-radius: 10px; padding: 18px 20px; }
-  .stat-card .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #475569; margin-bottom: 8px; }
-  .stat-card .value { font-size: 28px; font-weight: 700; line-height: 1; }
-  .stat-card.warn   .value { color: #f59e0b; }
-  .stat-card.ok     .value { color: #10b981; }
-  .stat-card.info   .value { color: #60a5fa; }
-  .stat-card.error  .value { color: #f87171; }
-  .stat-card.orange .value { color: #fb923c; }
-  .stat-card.muted  .value { color: #475569; }
-  .stat-card.purple .value { color: #c084fc; }
-  .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #475569; margin-bottom: 14px; }
-  .table-wrapper { background: #161b27; border: 1px solid #1e2535; border-radius: 10px; overflow: hidden; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead { background: #1a2033; border-bottom: 1px solid #1e2535; }
-  thead th { padding: 12px 14px; text-align: left; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; color: #64748b; }
-  tbody tr { border-bottom: 1px solid #1a2033; transition: background 0.15s; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #f8f9fa;
+    --surface:   #ffffff;
+    --border:    #e5e7eb;
+    --border-sm: #f0f1f3;
+    --text-1:    #111827;
+    --text-2:    #6b7280;
+    --text-3:    #9ca3af;
+    --mono:      "Cascadia Code", "Consolas", "SF Mono", monospace;
+    --radius-sm: 6px;
+    --radius:    10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text-1);
+    font-size: 13.5px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 48px 40px;
+  }
+
+  .page { max-width: 1320px; margin: 0 auto; }
+
+  /* ---- Header ---- */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 32px;
+    margin-bottom: 40px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-brand { display: flex; align-items: center; gap: 14px; }
+
+  .header-icon {
+    width: 40px; height: 40px;
+    background: #111827;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .header-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  .header-title { font-size: 17px; font-weight: 600; color: var(--text-1); letter-spacing: -0.3px; }
+  .header-sub   { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+  .header-meta {
+    text-align: right;
+    font-size: 12px;
+    color: var(--text-3);
+    line-height: 2;
+    flex-shrink: 0;
+  }
+
+  .header-meta span { color: var(--text-2); font-weight: 500; }
+
+  /* ---- Stats grid ---- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--accent, #e5e7eb);
+  }
+
+  .stat-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .stat-value { font-size: 26px; font-weight: 600; color: var(--text-1); line-height: 1; }
+  .stat-sub   { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+  .stat.blue   { --accent: #3b82f6; } .stat.blue   .stat-value { color: #1d4ed8; }
+  .stat.amber  { --accent: #f59e0b; } .stat.amber  .stat-value { color: #b45309; }
+  .stat.orange { --accent: #f97316; } .stat.orange .stat-value { color: #c2410c; }
+  .stat.purple { --accent: #8b5cf6; } .stat.purple .stat-value { color: #6d28d9; }
+  .stat.green  { --accent: #10b981; } .stat.green  .stat-value { color: #047857; }
+  .stat.gray   { --accent: #d1d5db; } .stat.gray   .stat-value { color: var(--text-2); }
+
+  /* ---- Legend ---- */
+  .legend {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 5px 12px 5px 6px;
+    font-size: 12px;
+    color: var(--text-2);
+  }
+
+  /* ---- Section heading ---- */
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .section-head h2 { font-size: 13px; font-weight: 600; color: var(--text-1); }
+  .section-head .count { font-size: 12px; color: var(--text-3); }
+
+  /* ---- Table ---- */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-3);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tbody tr { border-bottom: 1px solid var(--border-sm); transition: background 0.1s; }
   tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: #1a2235; }
-  td { padding: 10px 14px; vertical-align: middle; color: #cbd5e1; }
-  td code { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px; color: #93c5fd; background: #1e293b; padding: 2px 7px; border-radius: 4px; }
-  td.dn { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 10.5px; color: #475569; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
-  .na { color: #334155; font-style: italic; }
-  .badge { display: inline-block; font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.3px; }
-  .badge-enabled   { background: #052e16; color: #4ade80; border: 1px solid #166534; }
-  .badge-disabled  { background: #1c1917; color: #a8a29e; border: 1px solid #44403c; }
-  .badge-fixed     { background: #052e16; color: #34d399; border: 1px solid #065f46; }
-  .badge-notfixed  { background: #1c1407; color: #fbbf24; border: 1px solid #92400e; }
-  .badge-error     { background: #1f0707; color: #f87171; border: 1px solid #7f1d1d; }
-  .badge-whatif    { background: #0c1a2e; color: #60a5fa; border: 1px solid #1e40af; }
-  .badge-orphan    { background: #1c1407; color: #fb923c; border: 1px solid #9a3412; }
-  .badge-review    { background: #1a0a2e; color: #c084fc; border: 1px solid #6b21a8; }
-  .badge-muted     { background: #1c1917; color: #a8a29e; border: 1px solid #44403c; }
-  .no-results { text-align: center; padding: 48px !important; color: #10b981; font-size: 14px; }
-  footer { margin-top: 32px; font-size: 11px; color: #334155; text-align: center; }
+  tbody tr:hover { background: #f9fafb; }
+
+  td { padding: 10px 14px; vertical-align: middle; color: var(--text-1); }
+
+  td.mono {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #374151;
+  }
+
+  td.path {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-3);
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: default;
+  }
+
+  td.dim { color: var(--text-3); font-size: 12px; font-style: italic; }
+
+  .no-data { text-align: center; padding: 56px 24px; }
+  .no-data .icon { font-size: 32px; margin-bottom: 12px; }
+  .no-data p { font-size: 14px; color: var(--text-2); font-weight: 500; }
+  .no-data small { font-size: 12px; color: var(--text-3); }
+
+  /* ---- Badges ---- */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+
+  .badge-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+  .b-enabled  { background: #dcfce7; color: #166534; }
+  .b-enabled  .badge-dot { background: #16a34a; }
+  .b-disabled { background: #f3f4f6; color: #6b7280; }
+  .b-disabled .badge-dot { background: #9ca3af; }
+
+  .b-orphan { background: #fff7ed; color: #c2410c; }
+  .b-orphan .badge-dot { background: #f97316; }
+  .b-review { background: #f5f3ff; color: #6d28d9; }
+  .b-review .badge-dot { background: #8b5cf6; }
+  .b-skip   { background: #f3f4f6; color: #6b7280; }
+  .b-skip   .badge-dot { background: #9ca3af; }
+
+  .b-fixed    { background: #dcfce7; color: #166534; }
+  .b-fixed    .badge-dot { background: #16a34a; }
+  .b-notfixed { background: #fefce8; color: #854d0e; }
+  .b-notfixed .badge-dot { background: #ca8a04; }
+  .b-whatif   { background: #eff6ff; color: #1d4ed8; }
+  .b-whatif   .badge-dot { background: #3b82f6; }
+  .b-manual   { background: #f5f3ff; color: #6d28d9; }
+  .b-manual   .badge-dot { background: #8b5cf6; }
+  .b-err      { background: #fef2f2; color: #991b1b; }
+  .b-err      .badge-dot { background: #ef4444; }
+
+  /* ---- Footer ---- */
+  .footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .footer-brand { display: flex; align-items: center; gap: 8px; }
+  .footer-brand .dot { width: 6px; height: 6px; background: #111827; border-radius: 50%; }
+  .footer-brand span { font-size: 12px; font-weight: 600; color: var(--text-1); }
+  .footer p { font-size: 11px; color: var(--text-3); }
 </style>
 </head>
 <body>
+<div class="page">
 
-<header>
-  <div class="header-left">
-    <h1>ACL Inheritance Audit - AD User Accounts</h1>
-    <p>Disabled inheritance detection | SDProp orphan classification | Protected groups resolved via well-known RIDs</p>
+<header class="header">
+  <div class="header-brand">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </div>
+    <div>
+      <div class="header-title">ACL Inheritance Audit</div>
+      <div class="header-sub">Active Directory user accounts &middot; SDProp orphan classification &middot; Well-known RIDs</div>
+    </div>
   </div>
   <div class="header-meta">
-    <strong>Generated</strong> $genDate<br>
-    <strong>Duration</strong> ${duration}s<br>
-    <strong>Search base</strong> $SearchBase<br>
-    <strong>Version</strong> $scriptVersion
+    <div><span>Generated</span> $genDate</div>
+    <div><span>Duration</span> ${duration}s</div>
+    <div><span>Search base</span> $SearchBase</div>
+    <div><span>Version</span> $scriptVersion</div>
   </div>
 </header>
 
+<div class="stats">
+  <div class="stat blue">
+    <div class="stat-label">Scanned</div>
+    <div class="stat-value">$total</div>
+    <div class="stat-sub">user accounts</div>
+  </div>
+  <div class="stat amber">
+    <div class="stat-label">Affected</div>
+    <div class="stat-value">$affectedCount</div>
+    <div class="stat-sub">inheritance disabled</div>
+  </div>
+  <div class="stat orange">
+    <div class="stat-label">Orphan</div>
+    <div class="stat-value">$orphanCount</div>
+    <div class="stat-sub">safe to fix</div>
+  </div>
+  <div class="stat purple">
+    <div class="stat-label">Review</div>
+    <div class="stat-value">$reviewCount</div>
+    <div class="stat-sub">needs attention</div>
+  </div>
+  <div class="stat green">
+    <div class="stat-label">Fixed</div>
+    <div class="stat-value">$fixedCount</div>
+    <div class="stat-sub">this run</div>
+  </div>
+  <div class="stat gray">
+    <div class="stat-label">Skipped</div>
+    <div class="stat-value">$skippedSdprop</div>
+    <div class="stat-sub">SDProp active</div>
+  </div>
+</div>
+
 <div class="legend">
   <div class="legend-item">
-    <span class="badge badge-orphan">ORPHAN</span>
-    <span class="desc">adminCount=0/null &middot; not in any protected group &middot; SDProp residue (rights removed, inheritance never restored) or manual ACL change &middot; safe to fix</span>
+    <span class="badge b-orphan"><span class="badge-dot"></span>ORPHAN</span>
+    adminCount=0/null &middot; not in protected group &middot; safe to fix
   </div>
   <div class="legend-item">
-    <span class="badge badge-review">REVIEW</span>
-    <span class="desc">adminCount=0/null &middot; still in a protected group &middot; manual review required</span>
+    <span class="badge b-review"><span class="badge-dot"></span>REVIEW</span>
+    still in protected group &middot; manual review required
   </div>
   <div class="legend-item">
-    <span class="badge badge-muted">SKIP</span>
-    <span class="desc">adminCount=1 &middot; SDProp active &middot; excluded from report</span>
+    <span class="badge b-skip"><span class="badge-dot"></span>SKIP</span>
+    adminCount=1 &middot; SDProp active &middot; excluded
   </div>
 </div>
 
-<div class="stats">
-  <div class="stat-card info">
-    <div class="label">Users scanned</div>
-    <div class="value">$total</div>
-  </div>
-  <div class="stat-card warn">
-    <div class="label">Inheritance disabled</div>
-    <div class="value">$affectedCount</div>
-  </div>
-  <div class="stat-card orange">
-    <div class="label">Orphan (fixable)</div>
-    <div class="value">$orphanCount</div>
-  </div>
-  <div class="stat-card purple">
-    <div class="label">Review needed</div>
-    <div class="value">$reviewCount</div>
-  </div>
-  <div class="stat-card ok">
-    <div class="label">Fixed</div>
-    <div class="value">$fixedCount</div>
-  </div>
-  <div class="stat-card muted">
-    <div class="label">Skipped (SDProp=1)</div>
-    <div class="value">$skippedSdprop</div>
-  </div>
+<div class="section-head">
+  <h2>Affected accounts</h2>
+  <span class="count">$affectedCount result(s)</span>
 </div>
 
-<p class="section-title">Affected accounts</p>
-<div class="table-wrapper">
+<div class="table-wrap">
   <table>
     <thead>
       <tr>
-        <th>SamAccountName</th>
-        <th>Display Name</th>
         <th>Account</th>
+        <th>Display name</th>
+        <th>Status</th>
         <th>Category</th>
         <th>adminCount</th>
         <th>Department</th>
-        <th>OU Path</th>
-        <th>Fix Status</th>
+        <th>OU path</th>
+        <th>Fix status</th>
       </tr>
     </thead>
     <tbody>
@@ -497,10 +706,15 @@ $html = @"
   </table>
 </div>
 
-<footer>
-  Invoke-ACLInheritanceAudit v$scriptVersion - $closeDate - Protected groups: RIDs 512,518,519,520 (domain) + 544,548,549,550,551,552 (BUILTIN)
+<footer class="footer">
+  <div class="footer-brand">
+    <div class="dot"></div>
+    <span>9 Lives IT Solutions</span>
+  </div>
+  <p>Invoke-ACLInheritanceAudit v$scriptVersion &middot; $closeDate &middot; RIDs 512,518,519,520 + 544,548,549,550,551,552</p>
 </footer>
 
+</div>
 </body>
 </html>
 "@
