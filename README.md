@@ -2,12 +2,12 @@
 
 > PowerShell audit tool for detecting and remediating disabled ACL inheritance on Active Directory user accounts.
 
-Developed and maintained by **[9 Lives IT Solutions](https://github.com/9LivesITSolutions)** — Healthcare IT consulting · Infrastructure · Security.
-
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-2.0.0-informational.svg)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue.svg)]()
+
+[Version française](README.fr.md)
 
 ---
 
@@ -173,6 +173,22 @@ Invoke-ACLInheritanceAudit/
 
 ---
 
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes (`git commit -m 'feat: add my-feature'`)
+4. Push to the branch (`git push origin feature/my-feature`)
+5. Open a Pull Request
+
+Please follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
+
+---
+
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+Maintained by **9 Lives IT Solutions** — Healthcare IT & Infrastructure Automation.
